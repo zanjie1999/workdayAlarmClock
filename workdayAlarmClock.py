@@ -36,6 +36,7 @@ shell = u'export DISPLAY=:0.0 && lxterminal -t 闹钟 -e /usr/bin/play'
 
 # 获取今日类型
 def getDayType():
+    return 0
     url = 'http://api.goseek.cn/Tools/holiday?date=' + time.strftime("%Y%m%d", time.localtime())
     try:
         data = json.load(urllib2.urlopen(url))
@@ -74,7 +75,11 @@ def runShell(c):
     else:
         cmd = shell + u' \'' + c + u'\''
     
-    print(cmd)
+    try:
+        print(cmd)
+    except:
+        print(u'')
+    
     os.system(cmd)
     
     serverChan(c)
