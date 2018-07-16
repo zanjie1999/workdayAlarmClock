@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 # 工作日闹钟
-# 版本: 1.8
+# 版本: 2.0
 
 import platform
 import sys
@@ -25,18 +25,21 @@ import random
 # 3:执行shell随机播放路径目录下的mp3
 type = 3
 
+# 随机抽取的数量
+size = 2
+
 # 路径
-path = u'/home/pi/Music/'
+path = u'/home/sparkle/Music/'
 
 # 音乐文件
 musicFile = u''
 
 # 执行shell
-shell = u'export DISPLAY=:0.0 && lxterminal -t 闹钟 -e /usr/bin/play'
+shell = u'/usr/bin/play'
+
 
 # 获取今日类型
 def getDayType():
-    #return 0
     url = 'http://api.goseek.cn/Tools/holiday?date=' + time.strftime("%Y%m%d", time.localtime())
     try:
         data = json.load(urllib2.urlopen(url))
@@ -50,15 +53,20 @@ def getDayType():
 def getFile(p):
     dirL = []
     for name in os.listdir(p):
-        if name.endswith(u'.mp3'):
+        if name.endswith(u'.mp3') or name.endswith(u'.MP3') or name.endswith(u'.flac') or name.endswith(u'.FLAC'):
             dirL.append(name)
 
-    return dirL[random.randint(1, len(dirL)) - 1]
+    # dirL = os.listdir(p)
+    # return dirL[random.randint(1, len(dirL)) - 1]
+    if len(dirL) < size:
+        return dirL
+    else:
+        return random.sample(dirL, size)
 
 
 # Server酱
 def serverChan(p):
-    url = u'https://sc.ftqq.com/'
+    url = u'https://sc.ftqq.com/SCU21763T3a0c58a157ba626ccdd6691ab61261725a818cdd97391.send'
     urllib2.urlopen(url, data=urllib.urlencode({
         'text': '工作日闹钟' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
         'desp': p
@@ -70,19 +78,17 @@ def runShell(c):
     if path != u'':
         os.chdir(path)
     
-    if platform.system() == u'Windows':
-        cmd = shell + u' \"' + c + u'\"'
-    else:
-        cmd = shell + u' \'' + c + u'\''
+    cmd = ""
+    for i in c:
+        if platform.system() == u'Windows':
+            cmd += shell + u' \"' + i + u'\"; '
+        else:
+            cmd += shell + u' \'' + i + u'\'; '
     
-    try:
-        print(cmd)
-    except:
-        print(u'')
-    
+    print(cmd)
     os.system(cmd)
     
-    serverChan(c)
+    serverChan('\n\n'.join(c))
 
 
 # 判断是否工作日
