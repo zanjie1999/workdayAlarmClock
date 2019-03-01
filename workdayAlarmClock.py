@@ -1,8 +1,14 @@
 # -*- coding: UTF-8 -*-
 
 # 工作日闹钟
-# 版本: 2.0
+# 版本: 3.0
 
+import random
+import os
+import json
+import urllib2
+import urllib
+import time
 import platform
 import sys
 
@@ -12,14 +18,8 @@ if platform.system() == u'Windows':
 else:
     sys.setdefaultencoding('utf-8')
 
-import time
-import urllib
-import urllib2
-import json
-import os
-import random
 
-## 设置闹钟类型
+# 设置闹钟类型
 # 1:执行shell
 # 2:执行shell来播放路径的下的指定音乐文件
 # 3:执行shell随机播放路径目录下的mp3
@@ -35,12 +35,13 @@ path = u'/home/sparkle/Music/'
 musicFile = u''
 
 # 执行shell
-shell = u'/usr/bin/play'
+shell = u'/usr/bin/vlc --play-and-exit'
 
 
 # 获取今日类型
 def getDayType():
-    url = 'http://api.goseek.cn/Tools/holiday?date=' + time.strftime("%Y%m%d", time.localtime())
+    url = 'http://api.goseek.cn/Tools/holiday?date=' + \
+        time.strftime("%Y%m%d", time.localtime())
     try:
         data = json.load(urllib2.urlopen(url))
         return data['data']
@@ -58,15 +59,45 @@ def getFile(p):
 
     # dirL = os.listdir(p)
     # return dirL[random.randint(1, len(dirL)) - 1]
-    if len(dirL) < size:
+    if len(dirL) <= size:
         return dirL
     else:
-        return random.sample(dirL, size)
+        j = ''
+        # 看看文件是否存在，有就读出来
+        if os.path.exists(path + "workdayAlarmClock.json"):
+            db = open(path + "workdayAlarmClock.json", 'r')
+            j = db.read().strip()
+            db.close()
+
+        if j == '':
+            print("db empty")
+            j = '[]'
+        if not (j.startswith('[') and j.endswith(']')):
+            print("db error")
+            j = '[]'
+        played = json.loads(j)
+        if len(played) > 0:
+            if len(dirL) >= len(played) + size:
+                # 筛选掉曾经放过的
+                dirL = list(set(dirL).difference(set(played)))
+            else:
+                # 数量不够了重置曾经播放过的
+                played = []
+
+        # 随机抽取
+        randomFile = random.sample(dirL, size)
+        played += randomFile
+        # 保存
+        db = open(path + "workdayAlarmClock.json", 'w')
+        db.write(json.dumps(played, ensure_ascii=False))
+        db.close()
+
+        return randomFile
 
 
 # Server酱
 def serverChan(p):
-    url = u'https://sc.ftqq.com/SCU21763T3a0c58a157ba626ccdd6691ab61261725a818cdd97391.send'
+    url = u'https://sc.ftqq.com/'
     urllib2.urlopen(url, data=urllib.urlencode({
         'text': '工作日闹钟' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
         'desp': p
@@ -77,17 +108,17 @@ def serverChan(p):
 def runShell(c):
     if path != u'':
         os.chdir(path)
-    
+
     cmd = ""
     for i in c:
-        if platform.system() == u'Windows':
-            cmd += shell + u' \"' + i + u'\"; '
-        else:
-            cmd += shell + u' \'' + i + u'\'; '
-    
+        #        if platform.system() == u'Windows':
+        cmd += shell + u' "' + i.replace('"', '\"') + u'"; '
+#        else:
+#            cmd += shell + u" '" + i.replace("'","\'") + u"'; "
+
     print(cmd)
     os.system(cmd)
-    
+
     serverChan('\n\n'.join(c))
 
 
